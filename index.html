@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Selva: ¡Exploradores en Acción!</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #FDFBF7;
+            scroll-behavior: smooth;
+        }
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #ECFDF5;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #34D399;
+            border-radius: 20px;
+            border: 3px solid #ECFDF5;
+        }
+        .layer-transition {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+
+    <!-- Import Map for ESM usage -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0/client",
+        "recharts": "https://esm.sh/recharts@2.12.0"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import React, { useState, useMemo } from 'react';
+        import ReactDOM from 'react-dom';
+        import { 
+            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+            PieChart, Pie, Cell, Legend 
+        } from 'recharts';
+
+        // --- Constants & Data ---
+        const ANIMALS = [
+            { id: 1, name: "León", icon: "🦁", type: "walk", diet: "meat", desc: "El Rey de la selva. Ruge muy fuerte." },
+            { id: 2, name: "Tucán", icon: "🦜", type: "fly", diet: "fruit", desc: "Tiene un pico enorme de colores." },
+            { id: 3, name: "Cocodrilo", icon: "🐊", type: "swim", diet: "meat", desc: "Vive en el río y tiene dientes grandes." },
+            { id: 4, name: "Elefante", icon: "🐘", type: "walk", diet: "plant", desc: "Es el animal más grande y pesado." },
+            { id: 5, name: "Mono", icon: "🐒", type: "walk", diet: "fruit", desc: "Le encanta saltar por los árboles." },
+            { id: 6, name: "Serpiente", icon: "🐍", type: "walk", diet: "meat", desc: "Se arrastra por el suelo sin patas." },
+            { id: 7, name: "Águila", icon: "🦅", type: "fly", diet: "meat", desc: "Vuela muy alto y ve muy bien." },
+            { id: 8, name: "Rana", icon: "🐸", type: "swim", diet: "bug", desc: "Salta mucho y come moscas." }
+        ];
+
+        const LAYERS = {
+            emergente: {
+                title: "El Ático (Emergente)",
+                desc: "¡Aquí da mucho el sol! Es la parte más alta de los árboles gigantes. Aquí viven las águilas y mariposas grandes.",
+                icon: "🦅",
+                color: "bg-blue-200"
+            },
+            dosel: {
+                title: "El Techo (Dosel)",
+                desc: "Es como el techo de la selva. Hay mucha comida y ramas. Aquí viven los monos, los tucanes y los perezosos.",
+                icon: "🐒",
+                color: "bg-green-400"
+            },
+            sotobosque: {
+                title: "Piso Medio (Sotobosque)",
+                desc: "Aquí hay poca luz y muchas plantas grandes. Los jaguares se esconden aquí para cazar.",
+                icon: "🐆",
+                color: "bg-green-600"
+            },
+            suelo: {
+                title: "El Suelo",
+                desc: "Está oscuro y húmedo. Aquí viven los insectos, las hormigas y los animales grandes como el elefante.",
+                icon: "🐜",
+                color: "bg-yellow-800"
+            }
+        };
+
+        const chartData = {
+            diet: [
+                { name: 'Carne', value: 3, color: '#EF4444' },
+                { name: 'Plantas', value: 2, color: '#10B981' },
+                { name: 'Frutas', value: 2, color: '#F59E0B' },
+                { name: 'Bichos', value: 1, color: '#6366F1' },
+            ],
+            speed: [
+                { name: 'Jaguar', speed: 80, color: '#F97316' },
+                { name: 'Niño', speed: 20, color: '#3B82F6' },
+                { name: 'Perezoso', speed: 1, color: '#8B5CF6' },
+            ],
+            sleep: [
+                { name: 'Perezoso', hours: 20, color: '#8B5CF6' },
+                { name: 'Tigre', hours: 16, color: '#F97316' },
+                { name: 'Mono', hours: 10, color: '#F59E0B' },
+                { name: 'Elefante', hours: 4, color: '#6B7280' },
+            ]
+        };
+
+        // --- Components ---
+
+        const JungleCharts = () => (
+            <section id="fun" className="container mx-auto px-4 py-12">
+                <div className="mb-12 text-center">
+                    <h2 className="text-3xl md:text-4xl font-bold text-green-700 mb-4">📊 Datos Curiosos</h2>
+                    <p className="text-lg text-gray-600 italic">¡Los científicos usan gráficos para entender el mundo!</p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto mb-12">
+                    <div className="bg-white rounded-3xl shadow-xl p-6 border-l-8 border-orange-400">
+                        <h3 className="text-2xl font-bold text-orange-600 mb-6 text-center">🍽️ ¿Qué hay de cena?</h3>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={chartData.diet} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                        {chartData.diet.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-3xl shadow-xl p-6 border-l-8 border-blue-400">
+                        <h3 className="text-2xl font-bold text-blue-600 mb-6 text-center">⚡ La Gran Carrera (Km/h)</h3>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData.speed} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 12, fontWeight: 'bold' }} />
+                                    <Tooltip cursor={{fill: 'transparent'}} />
+                                    <Bar dataKey="speed" radius={[0, 10, 10, 0]}>
+                                        {chartData.speed.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-6 border-l-8 border-purple-400">
+                    <h3 className="text-2xl font-bold text-purple-600 mb-6 text-center">💤 Hora de la Siesta (Horas)</h3>
+                    <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData.sleep} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                                <XAxis dataKey="name" tick={{ fontSize: 14, fontWeight: 'bold' }} />
+                                <YAxis />
+                                <Tooltip cursor={{fill: '#f9f9f9'}} />
+                                <Bar dataKey="hours" radius={[10, 10, 0, 0]}>
+                                    {chartData.sleep.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const App = () => {
+            const [activeLayer, setActiveLayer] = useState('emergente');
+            const [filter, setFilter] = useState('all');
+
+            const filteredAnimals = useMemo(() => 
+                ANIMALS.filter(a => filter === 'all' || a.type === filter)
+            , [filter]);
+
+            const currentLayer = LAYERS[activeLayer];
+
+            const scrollToSection = (id) => {
+                const el = document.getElementById(id);
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+            };
+
+            return (
+                <div className="min-h-screen selection:bg-green-200">
+                    {/* Navigation */}
+                    <nav className="sticky top-0 z-50 bg-green-500 shadow-lg p-4 rounded-b-3xl mx-2 md:mx-8 mt-2">
+                        <div className="container mx-auto flex justify-between items-center">
+                            <div className="text-white font-bold text-xl md:text-2xl flex items-center gap-2">
+                                <span className="text-3xl">🦁</span> Misión Selva
+                            </div>
+                            <div className="flex gap-2 md:gap-4">
+                                <button onClick={() => scrollToSection('habitat')} className="text-white font-bold hover:text-yellow-200 transition text-sm md:text-base">Hogar</button>
+                                <button onClick={() => scrollToSection('animals')} className="text-white font-bold hover:text-yellow-200 transition text-sm md:text-base">Animales</button>
+                                <button onClick={() => scrollToSection('fun')} className="text-white font-bold hover:text-yellow-200 transition text-sm md:text-base">Datos</button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Hero */}
+                    <header className="container mx-auto px-4 py-16 text-center">
+                        <div className="bg-white rounded-[3rem] shadow-2xl p-10 border-b-[12px] border-green-500 max-w-4xl mx-auto relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl">🌿</div>
+                            <div className="absolute bottom-0 left-0 p-4 opacity-10 text-8xl">🍃</div>
+                            <div className="text-7xl mb-6 animate-bounce">🦜</div>
+                            <h1 className="text-4xl md:text-6xl font-bold text-green-600 mb-6 tracking-tight">¡Hola, Pequeño Explorador!</h1>
+                            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+                                Bienvenido a la selva. Vamos a descubrir animales increíbles, dónde viven y qué comen.
+                                <br /><strong className="text-green-700">¿Estás listo para la aventura?</strong>
+                            </p>
+                            <button 
+                                onClick={() => scrollToSection('habitat')}
+                                className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-4 px-12 rounded-full text-2xl shadow-[0_8px_0_rgb(202,138,4)] transition transform hover:scale-105 active:translate-y-1 active:shadow-none"
+                            >
+                                ¡Comenzar Misión! 🚀
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Habitat Section */}
+                    <section id="habitat" className="container mx-auto px-4 py-16">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="mb-12 text-center">
+                                <h2 className="text-4xl font-bold text-green-700 mb-4">🏠 Los Pisos de la Selva</h2>
+                                <p className="text-xl text-gray-600 bg-green-50 p-6 rounded-3xl border-2 border-dashed border-green-300 inline-block">
+                                    ¡Toca los pisos de colores para ver quién vive en cada parte!
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
+                                {/* Interactive Layers */}
+                                <div className="flex flex-col h-[550px] rounded-[2rem] overflow-hidden shadow-2xl border-4 border-green-800">
+                                    {Object.entries(LAYERS).map(([key, layer], idx) => (
+                                        <div
+                                            key={key}
+                                            onClick={() => setActiveLayer(key)}
+                                            className={`flex-1 ${layer.color} flex items-center justify-center relative cursor-pointer transition-all duration-300 hover:brightness-110 group ${activeLayer === key ? 'ring-inset ring-8 ring-yellow-400' : ''}`}
+                                        >
+                                            <span className={`absolute left-6 font-bold text-lg ${idx > 1 ? 'text-white' : 'text-gray-800'} bg-white/30 backdrop-blur-sm px-4 py-1 rounded-full`}>
+                                                {layer.title.split('(')[0]}
+                                            </span>
+                                            <span className="text-5xl group-hover:scale-125 transition-transform duration-300">
+                                                {layer.icon}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Info Panel */}
+                                <div className="bg-white rounded-[2rem] shadow-xl p-10 flex flex-col justify-center items-center border-t-[12px] border-yellow-400 relative">
+                                    <div className="text-9xl mb-8 animate-float">
+                                        {currentLayer.icon}
+                                    </div>
+                                    <h3 className="text-3xl font-bold text-green-800 mb-6 text-center">{currentLayer.title}</h3>
+                                    <p className="text-xl text-center text-gray-600 leading-relaxed font-medium">
+                                        {currentLayer.desc}
+                                    </p>
+                                    <div className="mt-8 px-6 py-2 bg-yellow-100 text-yellow-800 rounded-full font-bold">
+                                        Nivel: {activeLayer.toUpperCase()}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Animal Gallery */}
+                    <section id="animals" className="bg-green-50 py-20 rounded-[4rem]">
+                        <div className="container mx-auto px-4">
+                            <div className="text-center mb-12">
+                                <h2 className="text-4xl font-bold text-green-700 mb-6">📸 Galería de Amigos</h2>
+                                <p className="text-xl text-gray-600 mb-10">Filtra a los animales por cómo se mueven:</p>
+                                
+                                <div className="flex flex-wrap justify-center gap-4">
+                                    {[
+                                        { id: 'all', label: 'Todos', icon: '🌍' },
+                                        { id: 'walk', label: 'Caminan', icon: '🐾' },
+                                        { id: 'fly', label: 'Vuelan', icon: '🦅' },
+                                        { id: 'swim', label: 'Nadan', icon: '💧' }
+                                    ].map((t) => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => setFilter(t.id)}
+                                            className={`font-bold py-3 px-8 rounded-full shadow-lg border-b-4 transition-all transform active:translate-y-1 ${
+                                                filter === t.id 
+                                                ? 'bg-green-600 text-white border-green-800 scale-110' 
+                                                : 'bg-white text-green-800 border-green-200 hover:bg-green-100'
+                                            }`}
+                                        >
+                                            {t.icon} {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+                                {filteredAnimals.map((animal) => (
+                                    <div 
+                                        key={animal.id}
+                                        className="bg-white rounded-[2rem] shadow-xl p-8 text-center border-b-[10px] border-green-200 transition-all hover:-translate-y-3 hover:rotate-1 hover:shadow-2xl group"
+                                    >
+                                        <div className="text-8xl mb-6 group-hover:scale-110 transition-transform">{animal.icon}</div>
+                                        <h3 className="text-2xl font-bold text-green-800 mb-3">{animal.name}</h3>
+                                        <p className="text-gray-500 text-lg leading-snug">{animal.desc}</p>
+                                        <div className={`mt-4 inline-block px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
+                                            animal.diet === 'meat' ? 'bg-red-100 text-red-600' : 
+                                            animal.diet === 'plant' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
+                                        }`}>
+                                            {animal.diet}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Charts */}
+                    <JungleCharts />
+
+                    {/* Fun Facts */}
+                    <section className="bg-yellow-50 py-20">
+                        <div className="container mx-auto px-4">
+                            <h2 className="text-4xl font-bold text-yellow-700 text-center mb-16">✨ ¿Sabías que?</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-5xl mx-auto">
+                                <div className="bg-white p-10 rounded-[2.5rem] shadow-xl hover:scale-105 transition-transform border-b-[10px] border-green-500 text-center">
+                                    <div className="text-7xl mb-6">🐯</div>
+                                    <h3 className="text-2xl font-bold text-green-700 mb-4">Rayas Únicas</h3>
+                                    <p className="text-gray-600 text-lg">¡Las rayas del tigre son como tus huellas dactilares! Ningún tigre tiene las mismas rayas que otro.</p>
+                                </div>
+                                <div className="bg-white p-10 rounded-[2.5rem] shadow-xl hover:scale-105 transition-transform border-b-[10px] border-blue-500 text-center">
+                                    <div className="text-7xl mb-6">🐘</div>
+                                    <h3 className="text-2xl font-bold text-blue-700 mb-4">Trompa Mágica</h3>
+                                    <p className="text-gray-600 text-lg">La trompa de un elefante tiene más de 40,000 músculos. ¡Sirve para oler, beber y abrazar!</p>
+                                </div>
+                                <div className="bg-white p-10 rounded-[2.5rem] shadow-xl hover:scale-105 transition-transform border-b-[10px] border-red-500 text-center">
+                                    <div className="text-7xl mb-6">🐸</div>
+                                    <h3 className="text-2xl font-bold text-red-700 mb-4">¡Colores de Aviso!</h3>
+                                    <p className="text-gray-600 text-lg">Si ves una rana de colores muy brillantes, ¡no la toques! Esos colores le dicen a otros: "Soy peligrosa".</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Footer */}
+                    <footer className="bg-green-600 text-white text-center py-16 rounded-t-[4rem] shadow-[0_-15px_30px_-10px_rgba(0,0,0,0.2)]">
+                        <div className="text-6xl mb-6">🏅</div>
+                        <p className="font-bold text-4xl mb-4">¡Misión Cumplida, Explorador!</p>
+                        <p className="opacity-90 text-xl mb-10">Has aprendido mucho sobre nuestra maravillosa selva hoy.</p>
+                        <div className="flex justify-center gap-6 text-5xl animate-float">
+                            <span>🌴</span><span>🐆</span><span>🐒</span><span>🐢</span><span>🦜</span>
+                        </div>
+                        <div className="mt-12 text-sm opacity-60">
+                            &copy; 2024 Misión Selva Educativa - Creado con ❤️ para niños curiosos
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
